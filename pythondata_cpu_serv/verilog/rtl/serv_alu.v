@@ -2,105 +2,74 @@
 module serv_alu
   (
    input wire 	    clk,
-   input wire 	    i_rst,
+   //State
+   input wire 	    i_init,
    input wire 	    i_en,
    input wire 	    i_cnt0,
-   input wire 	    i_rs1,
-   input wire 	    i_rs2,
-   input wire 	    i_imm,
+   input wire 	    i_shamt_en,
+   output wire 	    o_cmp,
+   output wire 	    o_sh_done,
+   output wire 	    o_sh_done_r,
+   //Control
    input wire 	    i_op_b_rs2,
-   input wire 	    i_buf,
-   input wire 	    i_init,
-   input wire 	    i_cnt_done,
    input wire 	    i_sub,
    input wire [1:0] i_bool_op,
    input wire 	    i_cmp_eq,
-   input wire 	    i_cmp_uns,
-   output wire 	    o_cmp,
-   input wire 	    i_shamt_en,
-   input wire 	    i_sh_right,
-   input wire 	    i_sh_signed,
-   output wire 	    o_sh_done,
+   input wire 	    i_cmp_sig,
    input wire [3:0] i_rd_sel,
+   //Data
+   input wire 	    i_rs1,
+   input wire 	    i_rs2,
+   input wire 	    i_imm,
+   input wire 	    i_buf,
    output wire 	    o_rd);
 
    wire        result_add;
-   wire        result_eq;
-   wire        result_lt;
-   wire        result_sh;
 
-   reg 	       result_lt_r;
+   reg 	       cmp_r;
 
-   reg [4:0]   shamt;
-   reg 	       shamt_msb;
-
-   wire        shamt_ser;
-   wire        plus_1;
+   reg [5:0]   shamt_r;
 
    wire        add_cy;
    reg 	       add_cy_r;
 
-   wire        b_inv_plus_1;
-   wire        b_inv_plus_1_cy;
-   reg 	       b_inv_plus_1_cy_r;
-
    wire op_b = i_op_b_rs2 ? i_rs2 : i_imm;
-   assign shamt_ser = i_sh_right ? op_b : b_inv_plus_1;
 
-   serv_shift shift
-     (
-      .i_clk (clk),
-      .i_load (i_init),
-      .i_shamt (shamt),
-      .i_shamt_msb (shamt_msb),
-      .i_signbit (i_sh_signed & i_rs1),
-      .i_right  (i_sh_right),
-      .o_done   (o_sh_done),
-      .i_d (i_buf),
-      .o_q (result_sh));
+   //Sign-extended operands
+   wire rs1_sx  = i_rs1 & i_cmp_sig;
+   wire op_b_sx = op_b  & i_cmp_sig;
 
-   wire add_b = i_sub ? b_inv_plus_1 : op_b;
+   wire add_b = op_b^i_sub;
+
    assign {add_cy,result_add}   = i_rs1+add_b+add_cy_r;
-   assign {b_inv_plus_1_cy,b_inv_plus_1} = {1'b0,~op_b}+plus_1+b_inv_plus_1_cy_r;
 
-   reg        lt_r;
+   wire result_lt = rs1_sx + ~op_b_sx + add_cy;
 
-   reg        eq_r;
+   wire result_eq = !result_add & (cmp_r | i_cnt0);
 
-   wire       lt_sign = i_cnt_done & !i_cmp_uns;
-
-   wire       eq = (i_rs1 == op_b);
-
-   assign result_eq = eq & eq_r;
-   assign result_lt = eq ? lt_r : op_b^lt_sign;
-
-   assign plus_1 = i_cnt0;
    assign o_cmp = i_cmp_eq ? result_eq : result_lt;
 
    localparam [15:0] BOOL_LUT = 16'h8E96;//And, Or, =, xor
    wire result_bool = BOOL_LUT[{i_bool_op, i_rs1, op_b}];
 
    assign o_rd = (i_rd_sel[0] & result_add) |
-                 (i_rd_sel[1] & result_sh) |
-                 (i_rd_sel[2] & result_lt_r & plus_1) |
+                 (i_rd_sel[1] & i_buf) |
+                 (i_rd_sel[2] & cmp_r & i_cnt0) |
                  (i_rd_sel[3] & result_bool);
 
 
+   wire [5:0] shamt = i_init ? {1'b0,op_b,shamt_r[4:1]} : shamt_r-1;
+   assign o_sh_done = shamt[5];
+   assign o_sh_done_r = shamt_r[5];
+
    always @(posedge clk) begin
-      add_cy_r <= i_en & add_cy;
-      b_inv_plus_1_cy_r <= i_en & b_inv_plus_1_cy;
+      add_cy_r <= i_en ? add_cy : i_sub;
 
-      lt_r <= result_lt & i_en;
+      if (i_en)
+	cmp_r <= o_cmp;
 
-      if (i_en) begin
-	 result_lt_r <= result_lt;
-      end
-      eq_r <= result_eq | ~i_en;
-
-      if (i_shamt_en) begin
-	 shamt_msb <= b_inv_plus_1_cy;
-	 shamt <= {shamt_ser,shamt[4:1]};
-      end
+      if (i_shamt_en)
+	 shamt_r <= shamt;
    end
 
 endmodule

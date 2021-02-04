@@ -4,39 +4,39 @@ data_location = os.path.join(__dir__, "verilog")
 src = "https://github.com/olofk/serv"
 
 # Module version
-version_str = "1.0.post86"
-version_tuple = (1, 0, 86)
+version_str = "1.0.post180"
+version_tuple = (1, 0, 180)
 try:
     from packaging.version import Version as V
-    pversion = V("1.0.post86")
+    pversion = V("1.0.post180")
 except ImportError:
     pass
 
 # Data version info
-data_version_str = "1.0.post26"
-data_version_tuple = (1, 0, 26)
+data_version_str = "1.0.post92"
+data_version_tuple = (1, 0, 92)
 try:
     from packaging.version import Version as V
-    pdata_version = V("1.0.post26")
+    pdata_version = V("1.0.post92")
 except ImportError:
     pass
-data_git_hash = "a742002707de46a685d94b788a26b684542a69a7"
-data_git_describe = "v1.0-26-ga742002"
+data_git_hash = "bc9705bef2a8e1f21b0df7f8a59cc8541851e811"
+data_git_describe = "v1.0-92-gbc9705b"
 data_git_msg = """\
-commit a742002707de46a685d94b788a26b684542a69a7
-Author: Olof Kindgren <olof.kindgren@gmail.com>
-Date:   Fri Jun 5 15:30:51 2020 +0200
+commit bc9705bef2a8e1f21b0df7f8a59cc8541851e811
+Author: somhi <jordisx@gmail.com>
+Date:   Sat Jan 30 12:52:38 2021 +0100
 
-    Add links to movies
+    add support for SoCKit development kit board
 
 """
 
 # Tool version info
-tool_version_str = "0.0.post60"
-tool_version_tuple = (0, 0, 60)
+tool_version_str = "0.0.post88"
+tool_version_tuple = (0, 0, 88)
 try:
     from packaging.version import Version as V
-    ptool_version = V("0.0.post60")
+    ptool_version = V("0.0.post88")
 except ImportError:
     pass
 
